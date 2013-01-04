@@ -1102,6 +1102,7 @@ void add_input_randomness(unsigned int type, unsigned int code, unsigned int val
 	last_value = value;
 	add_timer_randomness(&input_timer_state,
 			     (type << 4) ^ code ^ (code >> 4) ^ value);
+	return;
 }
 EXPORT_SYMBOL_GPL(add_input_randomness);
 
