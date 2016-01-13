@@ -1332,6 +1332,12 @@ static inline int rt_mutex_slowtrylock(struct rt_mutex *lock)
 
 	ret = __rt_mutex_slowtrylock(lock);
 
+	/*
+	 * try_to_take_rt_mutex() sets the lock waiters bit
+	 * unconditionally. Clean this up.
+	 */
+	fixup_rt_mutex_waiters(lock);
+
 	raw_spin_unlock_irqrestore(&lock->wait_lock, flags);
 
 	return ret;
@@ -1750,6 +1756,9 @@ int rt_mutex_wait_proxy_lock(struct rt_mutex *lock,
 	int ret;
 
 	raw_spin_lock_irq(&lock->wait_lock);
+
+	set_current_state(TASK_INTERRUPTIBLE);
+
 	/* sleep on the mutex */
 	set_current_state(TASK_INTERRUPTIBLE);
 	ret = __rt_mutex_slowlock(lock, TASK_INTERRUPTIBLE, to, waiter);
