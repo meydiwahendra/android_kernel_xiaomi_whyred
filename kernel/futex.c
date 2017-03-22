@@ -835,29 +835,6 @@ static struct futex_pi_state *alloc_pi_state(void)
 	return pi_state;
 }
 
-static void pi_state_update_owner(struct futex_pi_state *pi_state,
-				  struct task_struct *new_owner)
-{
-	struct task_struct *old_owner = pi_state->owner;
-
-	lockdep_assert_held(&pi_state->pi_mutex.wait_lock);
-
-	if (old_owner) {
-		raw_spin_lock(&old_owner->pi_lock);
-		WARN_ON(list_empty(&pi_state->list));
-		list_del_init(&pi_state->list);
-		raw_spin_unlock(&old_owner->pi_lock);
-	}
-
-	if (new_owner) {
-		raw_spin_lock(&new_owner->pi_lock);
-		WARN_ON(!list_empty(&pi_state->list));
-		list_add(&pi_state->list, &new_owner->pi_state_list);
-		pi_state->owner = new_owner;
-		raw_spin_unlock(&new_owner->pi_lock);
-	}
-}
-
 static void get_pi_state(struct futex_pi_state *pi_state)
 {
 	WARN_ON_ONCE(!atomic_inc_not_zero(&pi_state->refcount));
@@ -1156,7 +1133,7 @@ static int attach_to_pi_state(u32 __user *uaddr, u32 uval,
 		goto out_einval;
 
 out_attach:
-	atomic_inc(&pi_state->refcount);
+	get_pi_state(pi_state);
 	raw_spin_unlock_irq(&pi_state->pi_mutex.wait_lock);
 	*ps = pi_state;
 	return 0;
@@ -2145,7 +2122,7 @@ retry_private:
 			 * refcount on the pi_state and store the pointer in
 			 * the futex_q object of the waiter.
 			 */
-			atomic_inc(&pi_state->refcount);
+			get_pi_state(pi_state);
 			this->pi_state = pi_state;
 			ret = rt_mutex_start_proxy_lock(&pi_state->pi_mutex,
 							this->rt_waiter,
