@@ -1504,16 +1504,25 @@ int __sched rt_mutex_lock_interruptible(struct rt_mutex *lock)
 EXPORT_SYMBOL_GPL(rt_mutex_lock_interruptible);
 
 /*
+ * Futex variant with full deadlock detection.
+ * Futex variants must not use the fast-path, see __rt_mutex_futex_unlock().
+ */
+int __sched rt_mutex_timed_futex_lock(struct rt_mutex *lock,
+			      struct hrtimer_sleeper *timeout)
+{
+	return rt_mutex_slowtrylock(lock);
+}
+
+	return rt_mutex_slowlock(lock, TASK_INTERRUPTIBLE,
+				 timeout, RT_MUTEX_FULL_CHAINWALK);
+}
+
+/*
  * Futex variant, must not use fastpath.
  */
 int __sched rt_mutex_futex_trylock(struct rt_mutex *lock)
 {
 	return rt_mutex_slowtrylock(lock);
-}
-
-int __sched __rt_mutex_futex_trylock(struct rt_mutex *lock)
-{
-	return __rt_mutex_slowtrylock(lock);
 }
 
 /**
@@ -1578,10 +1587,32 @@ EXPORT_SYMBOL_GPL(rt_mutex_unlock);
 bool __sched __rt_mutex_futex_unlock(struct rt_mutex *lock,
 				    struct wake_q_head *wake_q)
 {
-	if (likely(rt_mutex_cmpxchg_release(lock, current, NULL)))
-		return false;
+	lockdep_assert_held(&lock->wait_lock);
 
-	return rt_mutex_slowunlock(lock, wqh);
+	debug_rt_mutex_unlock(lock);
+
+	if (!rt_mutex_has_waiters(lock)) {
+		lock->owner = NULL;
+		return false; /* done */
+	}
+
+	mark_wakeup_next_waiter(wake_q, lock);
+	return true; /* deboost and wakeups */
+}
+
+void __sched rt_mutex_futex_unlock(struct rt_mutex *lock)
+{
+	DEFINE_WAKE_Q(wake_q);
+	bool deboost;
+
+	raw_spin_lock_irq(&lock->wait_lock);
+	deboost = __rt_mutex_futex_unlock(lock, &wake_q);
+	raw_spin_unlock_irq(&lock->wait_lock);
+
+	if (deboost) {
+		wake_up_q(&wake_q);
+		rt_mutex_adjust_prio(current);
+	}
 }
 
 /**
