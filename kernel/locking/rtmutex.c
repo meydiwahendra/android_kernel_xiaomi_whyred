@@ -1572,32 +1572,10 @@ EXPORT_SYMBOL_GPL(rt_mutex_unlock);
 bool __sched __rt_mutex_futex_unlock(struct rt_mutex *lock,
 				    struct wake_q_head *wake_q)
 {
-	lockdep_assert_held(&lock->wait_lock);
+	if (likely(rt_mutex_cmpxchg_release(lock, current, NULL)))
+		return false;
 
-	debug_rt_mutex_unlock(lock);
-
-	if (!rt_mutex_has_waiters(lock)) {
-		lock->owner = NULL;
-		return false; /* done */
-	}
-
-	mark_wakeup_next_waiter(wake_q, lock);
-	return true; /* deboost and wakeups */
-}
-
-void __sched rt_mutex_futex_unlock(struct rt_mutex *lock)
-{
-	WAKE_Q(wake_q);
-	bool deboost;
-
-	raw_spin_lock_irq(&lock->wait_lock);
-	deboost = __rt_mutex_futex_unlock(lock, &wake_q);
-	raw_spin_unlock_irq(&lock->wait_lock);
-
-	if (deboost) {
-		wake_up_q(&wake_q);
-		rt_mutex_adjust_prio(current);
-	}
+	return rt_mutex_slowunlock(lock, wqh);
 }
 
 /**
