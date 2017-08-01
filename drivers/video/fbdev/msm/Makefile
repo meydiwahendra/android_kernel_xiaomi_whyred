@@ -69,6 +69,10 @@ obj-$(CONFIG_FB_MSM_MDSS_KCAL_CTRL) += mdss_mdp_kcal_ctrl.o
 obj-$(CONFIG_COMPAT) += mdss_compat_utils.o
 
 
-# TODO: remove me b/62057517
+# TODO: remove me b/62058353
+
 subdir-ccflags-y += \
-	-Wno-header-guard
+	-Wno-header-guard \
+	-Wno-parentheses-equality \
+	-Wno-duplicate-decl-specifier
+
