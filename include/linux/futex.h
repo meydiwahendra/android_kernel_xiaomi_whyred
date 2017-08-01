@@ -55,13 +55,22 @@ union futex_key {
 #define FUTEX_KEY_INIT (union futex_key) { .both = { .ptr = 0ULL } }
 
 #ifdef CONFIG_FUTEX
-enum {
-	FUTEX_STATE_OK,
-	FUTEX_STATE_EXITING,
-	FUTEX_STATE_DEAD,
-};
+extern void exit_robust_list(struct task_struct *curr);
+#ifdef CONFIG_HAVE_FUTEX_CMPXCHG
+#define futex_cmpxchg_enabled 1
+#else
+extern int futex_cmpxchg_enabled;
+#endif
+#else
+static inline void exit_robust_list(struct task_struct *curr)
+{
+}
+#endif
 
-static inline void futex_init_task(struct task_struct *tsk)
+#ifdef CONFIG_FUTEX_PI
+extern void exit_pi_state_list(struct task_struct *curr);
+#else
+static inline void exit_pi_state_list(struct task_struct *curr)
 {
 	tsk->robust_list = NULL;
 #ifdef CONFIG_COMPAT
@@ -85,4 +94,5 @@ static inline void futex_exit_recursive(struct task_struct *tsk) { }
 static inline void futex_exit_release(struct task_struct *tsk) { }
 static inline void futex_exec_release(struct task_struct *tsk) { }
 #endif
+
 #endif
