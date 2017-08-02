@@ -714,17 +714,7 @@ struct cfg80211_bitrate_mask {
 		u16 vht_mcs[NL80211_VHT_NSS_MAX];
 		enum nl80211_txrate_gi gi;
 	} control[NUM_NL80211_BANDS];
-};
 
-/**
- * enum cfg80211_ap_settings_flags - AP settings flags
- *
- * Used by cfg80211_ap_settings
- *
- * @AP_SETTINGS_EXTERNAL_AUTH_SUPPORT: AP supports external authentication
- */
-enum cfg80211_ap_settings_flags {
-	AP_SETTINGS_EXTERNAL_AUTH_SUPPORT = BIT(0),
 };
 
 /**
