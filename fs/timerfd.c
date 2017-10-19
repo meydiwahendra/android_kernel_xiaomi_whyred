@@ -25,6 +25,7 @@
 #include <linux/syscalls.h>
 #include <linux/compat.h>
 #include <linux/rcupdate.h>
+#include <linux/hrtimer.h>
 
 struct timerfd_ctx {
 	union {
@@ -43,6 +44,8 @@ struct timerfd_ctx {
 	spinlock_t cancel_lock;
 	bool might_cancel;
 };
+
+static atomic_t instance_count = ATOMIC_INIT(0);
 
 static LIST_HEAD(cancel_list);
 static DEFINE_SPINLOCK(cancel_lock);
@@ -388,6 +391,11 @@ SYSCALL_DEFINE2(timerfd_create, int, clockid, int, flags)
 	int ufd;
 	struct timerfd_ctx *ctx;
 
+	enum alarmtimer_type type;
+	char task_comm_buf[TASK_COMM_LEN];
+	char file_name_buf[32];
+	int instance;
+
 	/* Check the TFD_* constants for consistency.  */
 	BUILD_BUG_ON(TFD_CLOEXEC != O_CLOEXEC);
 	BUILD_BUG_ON(TFD_NONBLOCK != O_NONBLOCK);
@@ -423,7 +431,12 @@ SYSCALL_DEFINE2(timerfd_create, int, clockid, int, flags)
 
 	ctx->moffs = ktime_mono_to_real((ktime_t){ .tv64 = 0 });
 
-	ufd = anon_inode_getfd("[timerfd]", &timerfd_fops, ctx,
+	instance = atomic_inc_return(&instance_count);
+	get_task_comm(task_comm_buf, current);
+	snprintf(file_name_buf, sizeof(file_name_buf), "[timerfd%d_%.*s]",
+		 instance, (int)sizeof(task_comm_buf), task_comm_buf);
+
+	ufd = anon_inode_getfd(file_name_buf, &timerfd_fops, ctx,
 			       O_RDWR | (flags & TFD_SHARED_FCNTL_FLAGS));
 	if (ufd < 0)
 		kfree(ctx);
