@@ -1325,12 +1325,6 @@ static inline int rt_mutex_slowtrylock(struct rt_mutex *lock)
 
 	ret = __rt_mutex_slowtrylock(lock);
 
-	/*
-	 * try_to_take_rt_mutex() sets the lock waiters bit
-	 * unconditionally. Clean this up.
-	 */
-	fixup_rt_mutex_waiters(lock);
-
 	raw_spin_unlock_irqrestore(&lock->wait_lock, flags);
 
 	return ret;
@@ -1514,6 +1508,11 @@ EXPORT_SYMBOL_GPL(rt_mutex_lock_interruptible);
 int __sched rt_mutex_futex_trylock(struct rt_mutex *lock)
 {
 	return rt_mutex_slowtrylock(lock);
+}
+
+int __sched __rt_mutex_futex_trylock(struct rt_mutex *lock)
+{
+	return __rt_mutex_slowtrylock(lock);
 }
 
 /**
