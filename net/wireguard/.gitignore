@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 cscope.out
 *.o
 *.d
@@ -22,3 +23,7 @@ src/tests/qemu/distfiles/
 .cache.mk
 src/crypto/zinc/*/*.S
 src/wireguard.mod
+=======
+crypto/zinc/chacha20/chacha20-arm64.S
+crypto/zinc/poly1305/poly1305-arm64.S
+>>>>>>> f603bc67053d (wireguard: add deprecated arm64 assembly files to gitignore)
