@@ -896,15 +896,72 @@ QDF_STATUS hdd_softap_rx_packet_cbk(void *context, qdf_nbuf_t rxBuf)
 	++pAdapter->stats.rx_packets;
 	pAdapter->stats.rx_bytes += skb->len;
 
-	qdf_mem_copy(&src_mac, skb->data + QDF_NBUF_SRC_MAC_OFFSET,
-		sizeof(src_mac));
-	if (QDF_STATUS_SUCCESS ==
-		hdd_softap_get_sta_id(pAdapter, &src_mac, &staid)) {
-		if (staid < WLAN_MAX_STA_COUNT) {
-			pAdapter->aStaInfo[staid].rx_packets++;
-			pAdapter->aStaInfo[staid].rx_bytes += skb->len;
-			pAdapter->aStaInfo[staid].last_tx_rx_ts =
-				qdf_system_ticks();
+		skb->dev = adapter->dev;
+
+		if (unlikely(!skb->dev)) {
+			QDF_TRACE(QDF_MODULE_ID_HDD_SAP_DATA,
+				  QDF_TRACE_LEVEL_ERROR,
+				  "%s: ERROR!!Invalid netdevice", __func__);
+			qdf_nbuf_free(skb);
+			continue;
+		}
+		cpu_index = wlan_hdd_get_cpu();
+		++adapter->hdd_stats.tx_rx_stats.rx_packets[cpu_index];
+		++adapter->stats.rx_packets;
+		adapter->stats.rx_bytes += skb->len;
+
+		/* Send DHCP Indication to FW */
+		src_mac = (struct qdf_mac_addr *)(skb->data +
+						  QDF_NBUF_SRC_MAC_OFFSET);
+		if (QDF_STATUS_SUCCESS ==
+			hdd_softap_get_sta_id(adapter, src_mac, &sta_id)) {
+			if (sta_id < WLAN_MAX_STA_COUNT) {
+				adapter->sta_info[sta_id].rx_packets++;
+				adapter->sta_info[sta_id].rx_bytes += skb->len;
+				adapter->sta_info[sta_id].last_tx_rx_ts =
+					qdf_system_ticks();
+				hdd_softap_inspect_dhcp_packet(adapter, skb,
+							       QDF_RX);
+			}
+		}
+
+		if (qdf_unlikely(qdf_nbuf_is_ipv4_eapol_pkt(skb) &&
+				 qdf_mem_cmp(qdf_nbuf_data(skb) +
+					     QDF_NBUF_DEST_MAC_OFFSET,
+					     adapter->mac_addr.bytes,
+					     QDF_MAC_ADDR_SIZE))) {
+			qdf_nbuf_free(skb);
+			continue;
+		}
+
+		hdd_event_eapol_log(skb, QDF_RX);
+		qdf_dp_trace_log_pkt(adapter->vdev_id,
+				     skb, QDF_RX, QDF_TRACE_DEFAULT_PDEV_ID);
+		DPTRACE(qdf_dp_trace(skb,
+			QDF_DP_TRACE_RX_HDD_PACKET_PTR_RECORD,
+			QDF_TRACE_DEFAULT_PDEV_ID,
+			qdf_nbuf_data_addr(skb),
+			sizeof(qdf_nbuf_data(skb)), QDF_RX));
+		DPTRACE(qdf_dp_trace_data_pkt(skb, QDF_TRACE_DEFAULT_PDEV_ID,
+				QDF_DP_TRACE_RX_PACKET_RECORD, 0, QDF_RX));
+
+		skb->protocol = eth_type_trans(skb, skb->dev);
+
+		/* Remove SKB from internal tracking table before submitting
+		 * it to stack
+		 */
+		qdf_net_buf_debug_release_skb(skb);
+
+		qdf_status = hdd_rx_deliver_to_stack(adapter, skb);
+
+		if (QDF_IS_STATUS_SUCCESS(qdf_status)) {
+			++adapter->hdd_stats.tx_rx_stats.rx_delivered[cpu_index];
+		} else {
+			++adapter->hdd_stats.tx_rx_stats.rx_refused[cpu_index];
+			DPTRACE(qdf_dp_log_proto_pkt_info(NULL, NULL, 0, 0,
+						      QDF_RX,
+						      QDF_TRACE_DEFAULT_MSDU_ID,
+						      QDF_TX_RX_STATUS_DROP));
 		}
 	}
 

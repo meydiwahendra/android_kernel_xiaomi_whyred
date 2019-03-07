@@ -16115,17 +16115,27 @@ struct hdd_config {
 	uint8_t  periodic_stats_disp_time;
 #endif /* MSM_PLATFORM */
 
-	/* FW debug log parameters */
-	uint32_t enableFwLogType;
-	uint32_t enableFwLogLevel;
-	uint8_t enableFwModuleLogLevel[FW_MODULE_LOG_LEVEL_STRING_LENGTH];
-
-	/* RTS profile parameter */
-	uint32_t rts_profile;
-
-#ifdef WLAN_FEATURE_11W
-	uint32_t pmfSaQueryMaxRetries;
-	uint32_t pmfSaQueryRetryInterval;
+#ifdef QCA_LL_LEGACY_TX_FLOW_CONTROL
+	uint32_t tx_flow_low_watermark;
+	uint32_t tx_flow_hi_watermark_offset;
+	uint32_t tx_flow_max_queue_depth;
+	uint32_t tx_lbw_flow_low_watermark;
+	uint32_t tx_lbw_flow_hi_watermark_offset;
+	uint32_t tx_lbw_flow_max_queue_depth;
+	uint32_t tx_hbw_flow_low_watermark;
+	uint32_t tx_hbw_flow_hi_watermark_offset;
+	uint32_t tx_hbw_flow_max_queue_depth;
+#endif /* QCA_LL_LEGACY_TX_FLOW_CONTROL */
+	uint32_t napi_cpu_affinity_mask;
+	/* CPU affinity mask for rx_thread */
+	uint32_t rx_thread_ul_affinity_mask;
+	uint32_t rx_thread_affinity_mask;
+	uint8_t cpu_map_list[CFG_DP_RPS_RX_QUEUE_CPU_MAP_LIST_LEN];
+	bool multicast_replay_filter;
+	uint8_t num_dp_rx_threads;
+#ifdef CONFIG_DP_TRACE
+	bool enable_dp_trace;
+	uint8_t dp_trace_config[DP_TRACE_CONFIG_STRING_LENGTH];
 #endif
 
 	uint8_t gMaxConcurrentActiveSessions;
