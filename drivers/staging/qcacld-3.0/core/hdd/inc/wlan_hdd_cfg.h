@@ -200,6 +200,199 @@ struct hdd_config {
 	bool enable_dp_trace;
 	uint8_t dp_trace_config[DP_TRACE_CONFIG_STRING_LENGTH];
 #endif
+
+	uint8_t gMaxConcurrentActiveSessions;
+
+	uint8_t ignoreCAC;
+
+#ifdef FEATURE_GREEN_AP
+	bool enableGreenAP;
+	bool enable_egap;
+	uint32_t egap_feature_flag;
+	uint32_t egap_inact_time;
+	uint32_t egap_wait_time;
+#endif
+	/* Flag to indicate crash inject enabled or not */
+	bool crash_inject_enabled;
+	uint8_t enable_sap_mandatory_chan_list;
+	int32_t dfsRadarPriMultiplier;
+	uint8_t reorderOffloadSupport;
+
+#ifdef WLAN_FEATURE_ROAM_OFFLOAD
+	bool isRoamOffloadEnabled;
+#endif
+
+	uint32_t IpaUcTxBufCount;
+	uint32_t IpaUcTxBufSize;
+	uint32_t IpaUcRxIndRingCount;
+	uint32_t IpaUcTxPartitionBase;
+#ifdef WLAN_LOGGING_SOCK_SVC_ENABLE
+	/* WLAN Logging */
+	bool wlanLoggingEnable;
+	bool wlanLoggingToConsole;
+#endif /* WLAN_LOGGING_SOCK_SVC_ENABLE */
+
+#ifdef WLAN_FEATURE_LPSS
+	bool enable_lpass_support;
+#endif
+#ifdef WLAN_FEATURE_NAN
+	bool enable_nan_support;
+#endif
+	bool enableSelfRecovery;
+#ifdef FEATURE_WLAN_FORCE_SAP_SCC
+	uint8_t SapSccChanAvoidance;
+#endif /* FEATURE_WLAN_FORCE_SAP_SCC */
+
+	bool enableSapSuspend;
+
+#ifdef WLAN_FEATURE_EXTWOW_SUPPORT
+	uint8_t extWowGotoSuspend;
+	uint8_t extWowApp1WakeupPinNumber;
+	uint8_t extWowApp2WakeupPinNumber;
+	uint32_t extWowApp2KAInitPingInterval;
+	uint32_t extWowApp2KAMinPingInterval;
+	uint32_t extWowApp2KAMaxPingInterval;
+	uint32_t extWowApp2KAIncPingInterval;
+	uint16_t extWowApp2TcpSrcPort;
+	uint16_t extWowApp2TcpDstPort;
+	uint32_t extWowApp2TcpTxTimeout;
+	uint32_t extWowApp2TcpRxTimeout;
+#endif
+	bool gEnableDeauthToDisassocMap;
+#ifdef DHCP_SERVER_OFFLOAD
+	bool enableDHCPServerOffload;
+	uint32_t dhcpMaxNumClients;
+	uint8_t dhcpServerIP[IPADDR_STRING_LENGTH];
+#endif /* DHCP_SERVER_OFFLOAD */
+	bool enable_mac_spoofing;
+	uint8_t conc_custom_rule1;
+	uint8_t conc_custom_rule2;
+	uint8_t is_sta_connection_in_5gz_enabled;
+	uint16_t p2p_listen_defer_interval;
+	uint32_t sta_miracast_mcc_rest_time_val;
+	uint32_t sta_scan_burst_duration;
+	uint32_t p2p_scan_burst_duration;
+	uint32_t go_scan_burst_duration;
+	uint32_t ap_scan_burst_duration;
+	bool is_ramdump_enabled;
+#ifdef FEATURE_AP_MCC_CH_AVOIDANCE
+	bool sap_channel_avoidance;
+#endif /* FEATURE_AP_MCC_CH_AVOIDANCE */
+	uint8_t sap_11ac_override;
+	uint8_t go_11ac_override;
+	uint8_t sap_dot11mc;
+	uint8_t prefer_non_dfs_on_radar;
+	bool ignore_peer_erp_info;
+	uint8_t multicast_host_fw_msgs;
+	uint8_t conc_system_pref;
+	bool sendDeauthBeforeCon;
+	bool tso_enable;
+	bool lro_enable;
+	bool gro_enable;
+	bool flow_steering_enable;
+	uint8_t max_msdus_per_rxinorderind;
+	bool active_mode_offload;
+	bool apf_packet_filter_enable;
+	/* parameter for defer timer for enabling TDLS on p2p listen */
+	uint16_t tdls_enable_defer_time;
+	uint32_t fine_time_meas_cap;
+	uint8_t max_scan_count;
+#ifdef WLAN_FEATURE_FASTPATH
+	bool fastpath_enable;
+#endif
+	uint8_t dot11p_mode;
+	bool etsi_srd_chan_in_master_mode;
+	uint8_t rx_mode;
+	uint32_t ce_service_max_yield_time;
+	uint8_t ce_service_max_rx_ind_flush;
+	uint8_t cpu_map_list[CFG_RPS_RX_QUEUE_CPU_MAP_LIST_LEN];
+#ifdef FEATURE_WLAN_EXTSCAN
+	bool     extscan_enabled;
+	uint32_t extscan_passive_max_chn_time;
+	uint32_t extscan_passive_min_chn_time;
+	uint32_t extscan_active_max_chn_time;
+	uint32_t extscan_active_min_chn_time;
+#endif
+	bool ce_classify_enabled;
+	uint32_t dual_mac_feature_disable;
+	uint8_t dbs_scan_selection[CFG_DBS_SCAN_PARAM_LENGTH];
+	uint32_t sta_sap_scc_on_dfs_chan;
+	uint32_t sta_sap_scc_on_lte_coex_chan;
+	bool     tx_chain_mask_cck;
+	uint8_t  tx_chain_mask_1ss;
+	bool smart_chainmask_enabled;
+	bool alternative_chainmask_enabled;
+	uint16_t  self_gen_frm_pwr;
+#ifdef WLAN_FEATURE_UDP_RESPONSE_OFFLOAD
+	bool udp_resp_offload_support;
+	uint32_t dest_port;
+	char payload_filter[MAX_LEN_UDP_RESP_OFFLOAD];
+	char response_payload[MAX_LEN_UDP_RESP_OFFLOAD];
+#endif
+#ifdef FEATURE_WLAN_SCAN_PNO
+	bool pno_channel_prediction;
+	uint8_t top_k_num_of_channels;
+	uint8_t stationary_thresh;
+	uint32_t channel_prediction_full_scan;
+#endif
+	bool early_stop_scan_enable;
+	int8_t early_stop_scan_min_threshold;
+	int8_t early_stop_scan_max_threshold;
+	int8_t first_scan_bucket_threshold;
+	uint8_t ht_mpdu_density;
+#ifdef FEATURE_LFR_SUBNET_DETECTION
+	bool enable_lfr_subnet_detection;
+#endif
+	uint16_t obss_active_dwelltime;
+	uint16_t obss_passive_dwelltime;
+	uint16_t obss_width_trigger_interval;
+	uint8_t inform_bss_rssi_raw;
+#ifdef WLAN_FEATURE_TSF
+	uint32_t tsf_gpio_pin;
+
+#ifdef WLAN_FEATURE_TSF_PLUS
+	uint8_t tsf_ptp_options;
+#endif /* WLAN_FEATURE_TSF_PLUS */
+#endif
+	uint32_t roam_dense_traffic_thresh;
+	uint32_t roam_dense_rssi_thresh_offset;
+	bool ignore_peer_ht_opmode;
+	uint32_t roam_dense_min_aps;
+	int8_t roam_bg_scan_bad_rssi_thresh;
+	uint8_t roam_bad_rssi_thresh_offset_2g;
+	uint32_t ho_delay_for_rx;
+	uint32_t min_delay_btw_roam_scans;
+	uint32_t roam_trigger_reason_bitmask;
+	bool roaming_scan_policy;
+	uint32_t roam_bg_scan_client_bitmap;
+	bool enable_edca_params;
+	uint32_t edca_vo_cwmin;
+	uint32_t edca_vi_cwmin;
+	uint32_t edca_bk_cwmin;
+	uint32_t edca_be_cwmin;
+	uint32_t edca_vo_cwmax;
+	uint32_t edca_vi_cwmax;
+	uint32_t edca_bk_cwmax;
+	uint32_t edca_be_cwmax;
+	uint32_t edca_vo_aifs;
+	uint32_t edca_vi_aifs;
+	uint32_t edca_bk_aifs;
+	uint32_t edca_be_aifs;
+
+	/* Tuning TX sched parameters for VO (skip credit limit credit disc) */
+	uint8_t  tx_sched_wrr_vo[TX_SCHED_WRR_PARAM_STRING_LENGTH];
+	/* Tuning TX sched parameters for VI (skip credit limit credit disc) */
+	uint8_t  tx_sched_wrr_vi[TX_SCHED_WRR_PARAM_STRING_LENGTH];
+	/* Tuning TX sched parameters for BE (skip credit limit credit disc) */
+	uint8_t  tx_sched_wrr_be[TX_SCHED_WRR_PARAM_STRING_LENGTH];
+	/* Tuning TX sched parameters for BK (skip credit limit credit disc) */
+	uint8_t  tx_sched_wrr_bk[TX_SCHED_WRR_PARAM_STRING_LENGTH];
+
+	bool enable_fatal_event;
+	bool apf_enabled;
+	bool enable_dp_trace;
+	uint8_t dp_trace_config[DP_TRACE_CONFIG_STRING_LENGTH];
+#endif
 	uint8_t enable_nud_tracking;
 	uint8_t operating_channel;
 	uint8_t num_vdevs;
