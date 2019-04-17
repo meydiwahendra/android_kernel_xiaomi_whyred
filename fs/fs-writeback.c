@@ -1767,8 +1767,8 @@ static long wb_writeback(struct bdi_writeback *wb,
 		 * safe.
 		 */
 		if (work->for_kupdate) {
-			dirtied_before = jiffies -
-				msecs_to_jiffies(dirty_expire_interval * 10);
+			oldest_jif = jiffies -
+				msecs_to_jiffies(30000);
 		} else if (work->for_background)
 			dirtied_before = jiffies;
 
@@ -1877,7 +1877,7 @@ static long wb_check_old_data_flush(struct bdi_writeback *wb)
 		return 0;
 
 	expired = wb->last_old_flush +
-			msecs_to_jiffies(dirty_writeback_interval * 10);
+			msecs_to_jiffies(5000);
 	if (time_before(jiffies, expired))
 		return 0;
 
