@@ -1,4 +1,5 @@
 /* Copyright (c) 2016-2017, 2020, The Linux Foundation. All rights reserved.
+ * Copyright (C) 2019 XiaoMi, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -336,7 +337,6 @@
 
 /* MEM_IF_DMA_CTL */
 #define DMA_CLEAR_LOG_BIT			BIT(0)
-
 /* MEM_IF_REQ */
 #define MEM_IF_ARB_REQ_BIT			BIT(0)
 #endif
