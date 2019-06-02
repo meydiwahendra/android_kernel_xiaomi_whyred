@@ -104,8 +104,83 @@ void qdf_busy_wait(uint32_t us_interval)
 }
 qdf_export_symbol(qdf_busy_wait);
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0) || \
-	defined(BACKPORTED_EXPORT_SAVE_STACK_TRACE_TSK_ARM)
+#ifdef MSM_PLATFORM
+void qdf_set_wake_up_idle(bool idle)
+{
+	set_wake_up_idle(idle);
+}
+#else
+void qdf_set_wake_up_idle(bool idle)
+{
+}
+#endif /* MSM_PLATFORM */
+
+qdf_export_symbol(qdf_set_wake_up_idle);
+
+void qdf_set_user_nice(qdf_thread_t *thread, long nice)
+{
+	set_user_nice(thread, nice);
+}
+qdf_export_symbol(qdf_set_user_nice);
+
+qdf_thread_t *qdf_create_thread(int (*thread_handler)(void *data), void *data,
+				const char thread_name[])
+{
+	struct task_struct *task;
+
+	task = kthread_create(thread_handler, data, thread_name);
+
+	if (IS_ERR(task))
+		return NULL;
+
+	return task;
+}
+qdf_export_symbol(qdf_create_thread);
+
+static uint16_t qdf_thread_id;
+
+qdf_thread_t *qdf_thread_run(qdf_thread_func callback, void *context)
+{
+	struct task_struct *thread;
+
+	thread = kthread_create((qdf_thread_os_func)callback, context,
+				"qdf %u", qdf_thread_id++);
+	if (IS_ERR(thread))
+		return NULL;
+
+	get_task_struct(thread);
+	wake_up_process(thread);
+
+	return thread;
+}
+qdf_export_symbol(qdf_thread_run);
+
+QDF_STATUS qdf_thread_join(qdf_thread_t *thread)
+{
+	QDF_STATUS status;
+
+	QDF_BUG(thread);
+
+	status = (QDF_STATUS)kthread_stop(thread);
+	put_task_struct(thread);
+
+	return status;
+}
+qdf_export_symbol(qdf_thread_join);
+
+bool qdf_thread_should_stop(void)
+{
+	return kthread_should_stop();
+}
+qdf_export_symbol(qdf_thread_should_stop);
+
+int qdf_wake_up_process(qdf_thread_t *thread)
+{
+	return wake_up_process(thread);
+}
+qdf_export_symbol(qdf_wake_up_process);
+
+#if defined(CONFIG_DEBUG_KERNEL)
 #define QDF_PRINT_TRACE_COUNT 32
 void qdf_print_thread_trace(qdf_thread_t *thread)
 {
