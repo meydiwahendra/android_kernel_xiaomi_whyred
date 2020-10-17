@@ -2046,7 +2046,7 @@ static int __unregister(struct device *dev, void *null)
  */
 void spi_unregister_master(struct spi_master *master)
 {
-	int dummy;
+	device_for_each_child(&master->dev, NULL, __unregister);
 
 	if (master->queued) {
 		if (spi_destroy_queue(master))
