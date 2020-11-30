@@ -211,7 +211,14 @@ static unsigned int dev_num = 1;
 static struct cdev wlan_hdd_state_cdev;
 static struct class *class;
 static dev_t device;
-static bool hdd_loaded = false;
+
+#define HDD_OPS_INACTIVITY_TIMEOUT (120000)
+#define MAX_OPS_NAME_STRING_SIZE 20
+#define RATE_LIMIT_ERROR_LOG (256)
+
+static qdf_timer_t hdd_drv_ops_inactivity_timer;
+static struct task_struct *hdd_drv_ops_task;
+static char drv_ops_string[MAX_OPS_NAME_STRING_SIZE];
 
 /* the Android framework expects this param even though we don't use it */
 #define BUF_LEN 20
@@ -14427,45 +14434,27 @@ static QDF_STATUS hdd_component_init(void)
 
 	return QDF_STATUS_SUCCESS;
 
-blm_deinit:
-	ucfg_blm_deinit();
-tdls_deinit:
-	ucfg_tdls_deinit();
+/**
+ * __hdd_module_init - Module init helper
+ *
+ * Module init helper function used by both module and static driver.
+ *
+ * Return: 0 for success, errno on failure
+ */
+static int hdd_module_init(void)
+{
+	if (__hdd_module_init()) {
+		pr_err("%s: Failed to register handler\n", __func__);
+		return -EINVAL;
+	}
 
-policy_deinit:
-	policy_mgr_deinit();
-interop_issues_ap_deinit:
-	ucfg_interop_issues_ap_deinit();
-p2p_deinit:
-	ucfg_p2p_deinit();
-nan_deinit:
-	nan_deinit();
-action_oui_deinit:
-	ucfg_action_oui_deinit();
-ipa_deinit:
-	ipa_deinit();
-ocb_deinit:
-	ucfg_ocb_deinit();
-pmo_deinit:
-	pmo_deinit();
-disa_deinit:
-	disa_deinit();
-fwol_deinit:
-	ucfg_fwol_deinit();
-mlme_deinit:
-	ucfg_mlme_deinit();
-target_if_deinit:
-	target_if_deinit();
-dispatcher_deinit:
-	dispatcher_deinit();
-mlme_global_deinit:
-	ucfg_mlme_global_deinit();
-
-	return status;
+	return 0;
 }
 
 /**
- * hdd_component_deinit() - Deinitialize all components
+ * hdd_module_exit() - Exit function
+ *
+ * This is the driver exit point (invoked when module is unloaded using rmmod)
  *
  * Return: None
  */
@@ -14712,13 +14701,6 @@ static bool is_monitor_mode_supported(void)
 {
 	return true;
 }
-#else
-static bool is_monitor_mode_supported(void)
-{
-	pr_err("Monitor mode not supported!");
-	return false;
-}
-#endif
 
 #ifdef WLAN_FEATURE_EPPING
 static bool is_epping_mode_supported(void)
