@@ -178,21 +178,11 @@ static struct spi_master *get_spi_master(struct device *dev)
 	return spi;
 }
 
-static inline void spi_geni_clk_conf(struct spi_geni_master *mas,
-		int clk_div, int clk_idx)
+int geni_spi_get_master_irq(struct spi_device *spi_slv)
 {
-	u32 clk_sel = 0;
-	u32 m_clk_cfg = 0;
+	struct spi_geni_master *mas = spi_master_get_devdata(spi_slv->master);
 
-	clk_sel |= (clk_idx & CLK_SEL_MSK);
-	m_clk_cfg |= ((clk_div << CLK_DIV_SHFT) | SER_CLK_EN);
-	geni_write_reg(clk_sel, mas->base, SE_GENI_CLK_SEL);
-	geni_write_reg(m_clk_cfg, mas->base, GENI_SER_M_CLK_CFG);
-
-	/*
-	 * Ensure Clk config completes before return.
-	 */
-	mb();
+	return mas->irq;
 }
 
 static int get_spi_clk_cfg(u32 speed_hz, struct spi_geni_master *mas,
