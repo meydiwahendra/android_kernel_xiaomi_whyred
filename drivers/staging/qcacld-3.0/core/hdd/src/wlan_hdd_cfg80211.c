@@ -21499,8 +21499,28 @@ static int wlan_hdd_cfg80211_set_mon_ch(struct wiphy *wiphy,
  */
 void wlan_hdd_clear_link_layer_stats(hdd_adapter_t *adapter)
 {
-	tSirLLStatsClearReq link_layer_stats_clear_req;
-	tHalHandle hal = WLAN_HDD_GET_HAL_CTX(adapter);
+	/*if ((info->cmd_flag != WMI_CHAN_InFO_START_RESP) &&
+	   (info->cmd_flag != WMI_CHAN_InFO_END_RESP))
+		hdd_err("cmd flag is invalid: %d", info->cmd_flag);*/
+
+	mutex_lock(&hdd_ctx->chan_info_lock);
+
+	if (info->cmd_flag == WMI_CHAN_InFO_START_RESP)
+		qdf_mem_zero(chan, sizeof(*chan));
+
+	chan->freq = info->freq;
+	chan->noise_floor = info->noise_floor;
+	chan->clock_freq = info->clock_freq;
+	chan->cmd_flag = info->cmd_flag;
+	chan->cycle_count = CNT_DIFF(info->cycle_count, chan->cycle_count);
+
+	chan->rx_clear_count =
+			CNT_DIFF(info->rx_clear_count, chan->rx_clear_count);
+
+	chan->tx_frame_count =
+			CNT_DIFF(info->tx_frame_count, chan->tx_frame_count);
+
+	mutex_unlock(&hdd_ctx->chan_info_lock);
 
 	link_layer_stats_clear_req.statsClearReqMask = WIFI_STATS_IFACE_AC |
 		WIFI_STATS_IFACE_ALL_PEER;
