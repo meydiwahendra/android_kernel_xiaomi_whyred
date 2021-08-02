@@ -876,6 +876,8 @@ static void get_pi_state(struct futex_pi_state *pi_state)
 /*
  * Drops a reference to the pi_state object and frees or caches it
  * when the last reference is gone.
+ *
+ * Must be called with the hb lock held.
  */
 static void put_pi_state(struct futex_pi_state *pi_state)
 {
@@ -2180,6 +2182,8 @@ retry_private:
 
 			/* If the above failed, then pi_state is NULL */
 		case -EFAULT:
+			put_pi_state(pi_state);
+			pi_state = NULL;
 			double_unlock_hb(hb1, hb2);
 			hb_waiters_dec(hb2);
 			put_futex_key(&key2);
@@ -2196,6 +2200,8 @@ retry_private:
 			 *   exit to complete.
 			 * - EAGAIN: The user space value changed.
 			 */
+			put_pi_state(pi_state);
+			pi_state = NULL;
 			double_unlock_hb(hb1, hb2);
 			hb_waiters_dec(hb2);
 			put_futex_key(&key2);
@@ -2288,11 +2294,7 @@ retry_private:
 				 */
 				this->pi_state = NULL;
 				put_pi_state(pi_state);
-				/*
-				 * We stop queueing more waiters and let user
-				 * space deal with the mess.
-				 */
-				break;
+				goto out_unlock;
 			}
 		}
 		requeue_futex(this, hb1, hb2, &key2);
@@ -2307,6 +2309,7 @@ retry_private:
 	put_pi_state(pi_state);
 
 out_unlock:
+	put_pi_state(pi_state);
 	double_unlock_hb(hb1, hb2);
 	wake_up_q(&wake_q);
 	hb_waiters_dec(hb2);
