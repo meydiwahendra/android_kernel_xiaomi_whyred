@@ -1012,8 +1012,8 @@ static void exit_pi_state_list(struct task_struct *curr)
 		raw_spin_unlock_irq(&pi_state->pi_mutex.wait_lock);
 		spin_unlock(&hb->lock);
 
-		rt_mutex_futex_unlock(&pi_state->pi_mutex);
-		put_pi_state(pi_state);
+		get_pi_state(pi_state);
+		spin_unlock(&hb->lock);
 
 		rt_mutex_futex_unlock(&pi_state->pi_mutex);
 		put_pi_state(pi_state);
@@ -1591,14 +1591,19 @@ static int wake_futex_pi(u32 __user *uaddr, u32 uval, struct futex_pi_state *pi_
 {
 	u32 uninitialized_var(curval), newval;
 	struct task_struct *new_owner;
-	bool postunlock = false;
-        WAKE_Q(wake_q);
+	bool deboost = false;
+	WAKE_Q(wake_q);
 	int ret = 0;
 
+	raw_spin_lock_irq(&pi_state->pi_mutex.wait_lock);
 	new_owner = rt_mutex_next_owner(&pi_state->pi_mutex);
-	if (WARN_ON_ONCE(!new_owner)) {
+	if (!new_owner) {
 		/*
-		 * As per the comment in futex_unlock_pi() this should not happen.
+		 * Since we held neither hb->lock nor wait_lock when coming
+		 * into this function, we could have raced with futex_lock_pi()
+		 * such that we might observe @this futex_q waiter, but the
+		 * rt_mutex's wait_list can be empty (either still, or again,
+		 * depending on which side we land).
 		 *
 		 * When this happens, give up our locks and try again, giving
 		 * the futex_lock_pi() instance time to complete, either by
@@ -1635,24 +1640,6 @@ static int wake_futex_pi(u32 __user *uaddr, u32 uval, struct futex_pi_state *pi_
 
 	if (ret)
 		goto out_unlock;
-
-	/*
-	 * This is a point of no return; once we modify the uval there is no
-	 * going back and subsequent operations must not fail.
-	 */
-
-	raw_spin_lock(&pi_state->owner->pi_lock);
-	WARN_ON(list_empty(&pi_state->list));
-	list_del_init(&pi_state->list);
-	raw_spin_unlock(&pi_state->owner->pi_lock);
-
-	raw_spin_lock(&new_owner->pi_lock);
-	WARN_ON(!list_empty(&pi_state->list));
-	list_add(&pi_state->list, &new_owner->pi_state_list);
-	pi_state->owner = new_owner;
-	raw_spin_unlock(&new_owner->pi_lock);
-
-	postunlock = __rt_mutex_futex_unlock(&pi_state->pi_mutex, &wake_q);
 
 out_unlock:
 	raw_spin_unlock_irq(&pi_state->pi_mutex.wait_lock);
@@ -3146,9 +3133,9 @@ retry:
 	 * all and we at least want to know if user space fiddled
 	 * with the futex value instead of blindly unlocking.
 	 */
-	top_waiter = futex_top_waiter(hb, &key);
-	if (top_waiter) {
-		struct futex_pi_state *pi_state = top_waiter->pi_state;
+	match = futex_top_waiter(hb, &key);
+	if (match) {
+		struct futex_pi_state *pi_state = match->pi_state;
 
 		ret = -EINVAL;
 		if (!pi_state)
@@ -3161,21 +3148,17 @@ retry:
 		if (pi_state->owner != current)
 			goto out_unlock;
 
-		get_pi_state(pi_state);
 		/*
-		 * By taking wait_lock while still holding hb->lock, we ensure
-		 * there is no point where we hold neither; and therefore
-		 * wake_futex_pi() must observe a state consistent with what we
-		 * observed.
+		 * Grab a reference on the pi_state and drop hb->lock.
 		 *
-		 * In particular; this forces __rt_mutex_start_proxy() to
-		 * complete such that we're guaranteed to observe the
-		 * rt_waiter. Also see the WARN in wake_futex_pi().
+		 * The reference ensures pi_state lives, dropping the hb->lock
+		 * is tricky.. wake_futex_pi() will take rt_mutex::wait_lock to
+		 * close the races against futex_lock_pi(), but in case of
+		 * _any_ fail we'll abort and retry the whole deal.
 		 */
-		raw_spin_lock_irq(&pi_state->pi_mutex.wait_lock);
+		get_pi_state(pi_state);
 		spin_unlock(&hb->lock);
 
-		/* drops pi_state->pi_mutex.wait_lock */
 		ret = wake_futex_pi(uaddr, uval, pi_state);
 
 		put_pi_state(pi_state);
@@ -3195,8 +3178,10 @@ retry:
 		 * A unconditional UNLOCK_PI op raced against a waiter
 		 * setting the FUTEX_WAITERS bit. Try again.
 		 */
-		if (ret == -EAGAIN)
-			goto pi_retry;
+		if (ret == -EAGAIN) {
+			put_futex_key(&key);
+			goto retry;
+		}
 		/*
 		 * wake_futex_pi has detected invalid state. Tell user
 		 * space.
@@ -3211,19 +3196,9 @@ retry:
 	 * preserve the WAITERS bit not the OWNER_DIED one. We are the
 	 * owner.
 	 */
-	if ((ret = cmpxchg_futex_value_locked(&curval, uaddr, uval, 0))) {
+	if (cmpxchg_futex_value_locked(&curval, uaddr, uval, 0)) {
 		spin_unlock(&hb->lock);
-		switch (ret) {
-		case -EFAULT:
-			goto pi_faulted;
-
-		case -EAGAIN:
-			goto pi_retry;
-
-		default:
-			WARN_ON_ONCE(1);
-			goto out_putkey;
-		}
+		goto pi_faulted;
 	}
 
 	/*
