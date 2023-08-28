@@ -127,3 +127,4 @@ Android.bp
 #
 *.sh
 /out
+KernelSU/
