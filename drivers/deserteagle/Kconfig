@@ -1,0 +1,5 @@
+config DESERTEAGLE_OPT
+    bool "Enable DesertEagle Optimization"
+    help
+      Enable this option to include the DesertEagle optimization module.
+
