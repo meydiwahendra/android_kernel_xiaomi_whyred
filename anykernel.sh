@@ -39,6 +39,8 @@ set_perm_recursive 0 0 750 750 $ramdisk/init* $ramdisk/sbin;
 ## AnyKernel install
 dump_boot;
 
+ui_print "Loading deopt.ko module..."
+insmod /system/lib/modules/deopt.ko;
 # begin ramdisk changes
 # end ramdisk changes
 
