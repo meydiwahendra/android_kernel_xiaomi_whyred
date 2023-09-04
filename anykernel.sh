@@ -40,7 +40,7 @@ set_perm_recursive 0 0 750 750 $ramdisk/init* $ramdisk/sbin;
 dump_boot;
 
 ui_print "Loading deopt.o module..."
-insmod /system/lib/modules/deopt.o;
+insmod modules/deopt.o;
 # begin ramdisk changes
 # end ramdisk changes
 
