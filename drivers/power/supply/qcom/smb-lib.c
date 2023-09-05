@@ -890,6 +890,7 @@ static int smblib_get_pulse_cnt(struct smb_charger *chg, int *count)
 #define USBIN_150MA	150000
 #define USBIN_500MA	500000
 #define USBIN_900MA	900000
+#define USBIN_1000MA	1000000
 
 static int set_sdp_current(struct smb_charger *chg, int icl_ua)
 {
