@@ -14,6 +14,8 @@
 #include <linux/power_supply.h>
 #include "../../drivers/power/supply/qcom/smb-lib.h"
 
+static struct kobject *deopt_kobj;
+
 #define smblib_set_prop_input_current_settled(power_supply, val) \
     power_supply_set_property(power_supply, POWER_SUPPLY_PROP_INPUT_CURRENT_SETTLED, val)
 
@@ -41,9 +43,50 @@
 #define smblib_set_prop_system_temp_level(power_supply, val) \
     power_supply_set_property(power_supply, POWER_SUPPLY_PROP_SYSTEM_TEMP_LEVEL, val)
 
+static int deserteagle_opt;
+static ssize_t deserteagle_opt_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+    return sprintf(buf, "%d\n", deserteagle_opt);
+}
+
+static ssize_t deserteagle_opt_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+    int value;
+    if (sscanf(buf, "%d", &value) == 1)
+    {
+        if (value == 0 || value == 1)
+        {
+            deserteagle_opt = value;
+            // Implement the logic to enable/disable deserteagle_opt here
+            // You can use the value of deserteagle_opt to control the behavior
+            // For example, if deserteagle_opt is 1, enable the feature, if it's 0, disable it.
+            pr_info("deserteagle_opt set to %d\n", deserteagle_opt);
+        }
+    }
+    return count;
+}
+
+static struct kobj_attribute deserteagle_opt_attribute = __ATTR(deserteagle_opt, 0664, deserteagle_opt_show, deserteagle_opt_store);
+
 static int __init deopt_init(void) {
-    // Hardcoded values for power supply properties
-    struct power_supply *psy = power_supply_get_by_name("battery");
+    struct power_supply *psy;
+    
+    // Initialize deserteagle_opt to 0 (disabled)
+    deserteagle_opt = 0;
+
+    // Create the sysfs directory and attribute for deserteagle_opt
+    deopt_kobj = kobject_create_and_add("deserteagle_opt", kernel_kobj);
+    if (!deopt_kobj) {
+        return -ENOMEM;
+    }
+
+    if (sysfs_create_file(deopt_kobj, &deserteagle_opt_attribute.attr)) {
+        kobject_put(deopt_kobj);
+        return -ENOMEM;
+    }
+
+
+    psy = power_supply_get_by_name("battery");
     if (psy) {
         const union power_supply_propval input_current_settled_val = {
             .intval = 1
@@ -91,12 +134,12 @@ static int __init deopt_init(void) {
 }
 
 static void __exit deopt_exit(void) {
+
+    sysfs_remove_file(deopt_kobj, &deserteagle_opt_attribute.attr);
+    kobject_put(deopt_kobj);
+
     pr_info("deopt module unloaded\n");
 }
 
 module_init(deopt_init);
 module_exit(deopt_exit);
-
-MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Meydi Wahendra <meydiwahendra@gmail.com>");
-MODULE_DESCRIPTION("Kernel module to set power supply properties");
