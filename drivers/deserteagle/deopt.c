@@ -77,25 +77,26 @@ int deserteagle_opt_init(void)
 {
 	int deserteagle_opt_retval;
 
-	deserteagle_opt_kobj = kobject_create_and_add("deserteagle_opt", kernel_kobj);
-	if (!deserteagle_opt_kobj) {
+	// Change the kobject path to /sys/kernel/deopt
+	deopt_kobj = kobject_create_and_add("deopt", kernel_kobj);
+	if (!deopt_kobj) {
 		return -ENOMEM;
 	}
 
-	deserteagle_opt_retval = sysfs_create_group(deserteagle_opt_kobj, &deserteagle_opt_attr_group);
+	deserteagle_opt_retval = sysfs_create_group(deopt_kobj, &deserteagle_opt_attr_group);
 
 	if (deserteagle_opt_retval)
-		kobject_put(deserteagle_opt_kobj);
+		kobject_put(deopt_kobj);
 
 	if (deserteagle_opt_retval)
-		kobject_put(deserteagle_opt_kobj);
+		kobject_put(deopt_kobj);
 
 	return (deserteagle_opt_retval);
 }
 
 void deserteagle_opt_exit(void)
 {
-	kobject_put(deserteagle_opt_kobj);
+	kobject_put(deopt_kobj);
 }
 
 module_init(deserteagle_opt_init);
