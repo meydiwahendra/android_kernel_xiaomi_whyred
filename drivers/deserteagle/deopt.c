@@ -4,6 +4,8 @@
  * A simple modules to optimize the custom kernel of Whyred (Redmi Note 5 Pro)
  */
 
+#ifdef CONFIG_DESERTEAGLE_OPT
+
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/init.h>
@@ -82,7 +84,6 @@ static int __init deopt_init(void) {
         return -ENOMEM;
     }
 
-
     psy = power_supply_get_by_name("battery");
     if (psy) {
         const union power_supply_propval input_current_settled_val = {
@@ -140,3 +141,19 @@ static void __exit deopt_exit(void) {
 
 module_init(deopt_init);
 module_exit(deopt_exit);
+
+#else /* CONFIG_DESERTEAGLE_OPT */
+#include <linux/module.h>
+
+static int __init deopt_init(void) {
+    pr_info("deopt module not loaded due to CONFIG_DESERTEAGLE_OPT=n\n");
+    return 0;
+}
+
+static void __exit deopt_exit(void) {
+}
+
+module_init(deopt_init);
+module_exit(deopt_exit);
+
+#endif /* CONFIG_DESERTEAGLE_OPT */
