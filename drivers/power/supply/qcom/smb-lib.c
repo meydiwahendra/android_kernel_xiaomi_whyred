@@ -917,7 +917,6 @@ static int set_sdp_current(struct smb_charger *chg, int icl_ua)
 		icl_options = CFG_USB3P0_SEL_BIT | USB51_MODE_BIT;
 		break;
 	default:
-		smblib_err(chg, "ICL %duA isn't supported for SDP\n", icl_ua);
 		return -EINVAL;
 	}
 
@@ -994,7 +993,13 @@ int smblib_set_icl_current(struct smb_charger *chg, int icl_ua)
 			goto enable_icl_changed_interrupt;
 		}
 	} else {
-		set_sdp_current(chg, 100000);
+		if (deserteagle_opt) {
+    		rc = set_sdp_current(chg, icl_ua);
+    		if (rc >= 0) {
+        	pr_info("Using USB high-current based on icl_ua: %duA\n", icl_ua);
+        	goto enable_icl_changed_interrupt;
+    		}
+	}		
 		rc = smblib_set_charge_param(chg, &chg->param.usb_icl, icl_ua);
 		if (rc < 0) {
 			smblib_err(chg, "Couldn't set HC ICL rc=%d\n", rc);
