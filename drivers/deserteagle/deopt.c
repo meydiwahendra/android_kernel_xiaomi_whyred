@@ -2,9 +2,19 @@
  * Author: Meydi Wahendra <meydiwahendra@gmail.com>
  * License: GPL
  * A simple modules to optimize the custom kernel of Whyred (Redmi Note 5 Pro)
+ * 
+ * Adapted fastchg code to this modules. 
+ * Author: Chad Froebel <chadfroebel@gmail.com>
+ *
+ * This software is licensed under the terms of the GNU General Public
+ * License version 2, as published by the Free Software Foundation, and
+ * may be copied, distributed, and modified under those terms.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  */
-
-#ifdef CONFIG_DESERTEAGLE_OPT
 
 #include <linux/module.h>
 #include <linux/kernel.h>
@@ -13,74 +23,80 @@
 #include <linux/fs.h>
 #include <linux/sysfs.h>
 #include <linux/uaccess.h>
+#include <linux/deopt.h>
 
 static struct kobject *deopt_kobj;
 
-static int deserteagle_opt;
+int deserteagle_opt = 1;
+
+static int __init get_fastcharge_opt(char *ffc)
+{
+	if (strcmp(ffc, "0") == 0) {
+		deserteagle_opt = 0;
+	} else if (strcmp(ffc, "1") == 0) {
+		deserteagle_opt = 1;
+	} else {
+		deserteagle_opt = 0;
+	}
+	return 1;
+}
+
+__setup("ffc=", get_fastcharge_opt);
+
 static ssize_t deserteagle_opt_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
-    return sprintf(buf, "%d\n", deserteagle_opt);
+	size_t count = 0;
+	count += sprintf(buf, "%d\n", deserteagle_opt);
+	return count;
 }
 
 static ssize_t deserteagle_opt_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
 {
-    int value;
-    if (sscanf(buf, "%d", &value) == 1)
-    {
-        if (value == 0 || value == 1)
-        {
-            deserteagle_opt = 1;
-            pr_info("deserteagle_opt set to %d\n", deserteagle_opt);
-        }
-    }
-    return count;
+	sscanf(buf, "%d ", &deserteagle_opt);
+	if (deserteagle_opt < 0 || deserteagle_opt > 1)
+		deserteagle_opt = 0;
+
+	return count;
 }
 
 static struct kobj_attribute deserteagle_opt_attribute = __ATTR(deserteagle_opt, 0664, deserteagle_opt_show, deserteagle_opt_store);
 
-static int __init deopt_init(void) {
-    // Initialize deserteagle_opt to 0 (disabled)
-    deserteagle_opt = 1;
+static struct attribute *deserteagle_opt_attrs[] = {
+	&deserteagle_opt_attribute.attr,
+	NULL,
+};
 
-    // Create the sysfs directory and attribute for deserteagle_opt
-    deopt_kobj = kobject_create_and_add("deserteagle_opt", kernel_kobj);
-    if (!deopt_kobj) {
-        return -ENOMEM;
-    }
+static struct attribute_group deserteagle_opt_attr_group = {
+	.attrs = deserteagle_opt_attrs,
+};
 
-    if (sysfs_create_file(deopt_kobj, &deserteagle_opt_attribute.attr)) {
-        kobject_put(deopt_kobj);
-        return -ENOMEM;
-    }
+/* Initialize deserteagle_opt sysfs folder */
+static struct kobject *deserteagle_opt_kobj;
 
-    pr_info("deopt module loaded\n");
+int deserteagle_opt_init(void)
+{
+	int deserteagle_opt_retval;
 
-    return 0;
+	deserteagle_opt_kobj = kobject_create_and_add("deserteagle_opt", kernel_kobj);
+	if (!deserteagle_opt_kobj) {
+		return -ENOMEM;
+	}
+
+	deserteagle_opt_retval = sysfs_create_group(deserteagle_opt_kobj, &deserteagle_opt_attr_group);
+
+	if (deserteagle_opt_retval)
+		kobject_put(deserteagle_opt_kobj);
+
+	if (deserteagle_opt_retval)
+		kobject_put(deserteagle_opt_kobj);
+
+	return (deserteagle_opt_retval);
 }
 
-static void __exit deopt_exit(void) {
-
-    sysfs_remove_file(deopt_kobj, &deserteagle_opt_attribute.attr);
-    kobject_put(deopt_kobj);
-
-    pr_info("deopt module unloaded\n");
+void deserteagle_opt_exit(void)
+{
+	kobject_put(deserteagle_opt_kobj);
 }
 
-module_init(deopt_init);
-module_exit(deopt_exit);
-
-#else /* CONFIG_DESERTEAGLE_OPT */
-#include <linux/module.h>
-
-static int __init deopt_init(void) {
-    pr_info("deopt module not loaded due to CONFIG_DESERTEAGLE_OPT=n\n");
-    return 0;
-}
-
-static void __exit deopt_exit(void) {
-}
-
-module_init(deopt_init);
-module_exit(deopt_exit);
-
-#endif /* CONFIG_DESERTEAGLE_OPT */
+module_init(deserteagle_opt_init);
+module_exit(deserteagle_opt_exit);
