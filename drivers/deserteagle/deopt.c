@@ -90,7 +90,11 @@ int deserteagle_opt_init(void)
 	if (deserteagle_opt_retval)
 		kobject_put(deopt_kobj);
 
-	pr_info("deserteagle_opt is %s, check in /sys/kernel/deopt/\n", deserteagle_opt ? "enabled" : "disabled");
+	if (deserteagle_opt == 0) {
+		pr_info("deserteagle_opt is disabled via /sys/kernel/deopt/deserteagle_opt. To enable it, please modify the value in /sys/kernel/deopt/deserteagle_opt.\n");
+	} else {
+		pr_info("deserteagle_opt is %s, check in /sys/kernel/deopt/\n", deserteagle_opt ? "enabled" : "disabled");
+	}
 
 	return (deserteagle_opt_retval);
 }
