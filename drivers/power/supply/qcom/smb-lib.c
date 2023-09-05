@@ -26,14 +26,11 @@
 #include "step-chg-jeita.h"
 #include "storm-watch.h"
 #include "fg-core.h"
+#include <linux/deopt.h>
 
 extern int hwc_check_global;
 #ifdef CONFIG_KERNEL_CUSTOM_E7S
 #define LCT_JEITA_CCC_AUTO_ADJUST  1
-#endif
-
-#ifdef CONFIG_FORCE_FAST_CHARGE
-#include <linux/fastchg.h>
 #endif
 
 #define smblib_err(chg, fmt, ...)		\
@@ -988,6 +985,11 @@ int smblib_set_icl_current(struct smb_charger *chg, int icl_ua)
 
 	if (icl_ua == INT_MAX)
 		goto override_suspend_config;
+
+	if (deserteagle_opt > 0 &&
+    	        chg->real_charger_type == POWER_SUPPLY_TYPE_USB &&
+                icl_ua == USBIN_500MA)
+                icl_ua = USBIN_1000MA;
 
 	/* configure current */
 	if (chg->typec_mode == POWER_SUPPLY_TYPEC_SOURCE_DEFAULT
@@ -2743,6 +2745,15 @@ static int smblib_handle_usb_current(struct smb_charger *chg,
 					int usb_current)
 {
 	int rc = 0, rp_ua, typec_mode;
+
+	if (deserteagle_opt > 0 &&
+    	    chg->real_charger_type == POWER_SUPPLY_TYPE_USB) {
+     	    if (usb_current > 0 && usb_current < USBIN_500MA)
+        	usb_current = USBIN_500MA;
+    	else if (usb_current >= USBIN_500MA)
+        	usb_current = USBIN_1000MA;
+}
+
 	if (chg->real_charger_type == POWER_SUPPLY_TYPE_USB_FLOAT) {
 		if (usb_current == -ETIMEDOUT) {
 			/*
