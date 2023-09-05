@@ -56,10 +56,7 @@ static ssize_t deserteagle_opt_store(struct kobject *kobj, struct kobj_attribute
     {
         if (value == 0 || value == 1)
         {
-            deserteagle_opt = value;
-            // Implement the logic to enable/disable deserteagle_opt here
-            // You can use the value of deserteagle_opt to control the behavior
-            // For example, if deserteagle_opt is 1, enable the feature, if it's 0, disable it.
+            deserteagle_opt = 1;
             pr_info("deserteagle_opt set to %d\n", deserteagle_opt);
         }
     }
