@@ -71,7 +71,6 @@ static struct attribute_group deserteagle_opt_attr_group = {
 };
 
 /* Initialize deserteagle_opt sysfs folder */
-static struct kobject *deserteagle_opt_kobj;
 
 int deserteagle_opt_init(void)
 {
@@ -90,6 +89,8 @@ int deserteagle_opt_init(void)
 
 	if (deserteagle_opt_retval)
 		kobject_put(deopt_kobj);
+
+	pr_info("deserteagle_opt is %s, check in /sys/kernel/deopt/\n", deserteagle_opt ? "enabled" : "disabled");
 
 	return (deserteagle_opt_retval);
 }
