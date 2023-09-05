@@ -11,44 +11,79 @@
 #include <linux/fs.h>
 #include <linux/sysfs.h>
 #include <linux/uaccess.h>
+#include <linux/power_supply.h>
+#include "../../drivers/power/supply/qcom/smb-lib.h"
 
-static void set_sysfs_value(const char *path, const char *value, mode_t mode) {
-    struct file *file;
-    mm_segment_t oldfs;
-    loff_t pos = 0;
-    char sysfs_path[256];
+#define smblib_set_prop_input_current_settled(power_supply, val) \
+    power_supply_set_property(power_supply, POWER_SUPPLY_PROP_INPUT_CURRENT_SETTLED, val)
 
-    snprintf(sysfs_path, sizeof(sysfs_path), "%s", path);
+#define smblib_set_prop_input_current_limited(power_supply, val) \
+    power_supply_set_property(power_supply, POWER_SUPPLY_PROP_INPUT_CURRENT_LIMITED, val)
 
-    // Open the file with write permissions and create it if it doesn't exist
-    file = filp_open(sysfs_path, O_WRONLY | O_CREAT, mode);
-    if (IS_ERR(file)) {
-        pr_err("Failed to open %s\n", sysfs_path);
-        return;
-    }
+#define smblib_set_prop_restricted_charging(power_supply, val) \
+    power_supply_set_property(power_supply, POWER_SUPPLY_PROP_RESTRICTED_CHARGING, val)
 
-    oldfs = get_fs();
-    set_fs(get_ds());
-    vfs_write(file, value, strlen(value), &pos);
-    set_fs(oldfs);
+#define smblib_set_prop_cool_temp(power_supply, val) \
+    power_supply_set_property(power_supply, POWER_SUPPLY_PROP_COOL_TEMP, val)
 
-    filp_close(file, NULL);
-}
+#define smblib_set_prop_warm_temp(power_supply, val) \
+    power_supply_set_property(power_supply, POWER_SUPPLY_PROP_WARM_TEMP, val)
+
+#define smblib_set_prop_hot_temp(power_supply, val) \
+    power_supply_set_property(power_supply, POWER_SUPPLY_PROP_HOT_TEMP, val)
+
+#define smblib_set_prop_pd_allowed(power_supply, val) \
+    power_supply_set_property(power_supply, POWER_SUPPLY_PROP_PD_ALLOWED, val)
+
+#define smblib_set_prop_allow_hvdcp3(power_supply, val) \
+    power_supply_set_property(power_supply, POWER_SUPPLY_PROP_ALLOW_HVDCP3, val)
+
+#define smblib_set_prop_system_temp_level(power_supply, val) \
+    power_supply_set_property(power_supply, POWER_SUPPLY_PROP_SYSTEM_TEMP_LEVEL, val)
 
 static int __init deopt_init(void) {
-    // Set sysfs values with permissions (e.g., 0644 for owner read/write and others read)
-    set_sysfs_value("1", "/sys/kernel/fast_charge/force_fast_charge", 0644);
-    set_sysfs_value("1", "/sys/class/power_supply/battery/system_temp_level", 0644);
-    set_sysfs_value("1", "/sys/kernel/fast_charge/failsafe", 0644);
-    set_sysfs_value("1", "/sys/class/power_supply/battery/allow_hvdcp3", 0644);
-    set_sysfs_value("1", "/sys/class/power_supply/usb/pd_allowed", 0644);
-    set_sysfs_value("1", "/sys/class/power_supply/battery/subsystem/usb/pd_allowed", 0644);
-    set_sysfs_value("0", "/sys/class/power_supply/battery/input_current_limited", 0644);
-    set_sysfs_value("1", "/sys/class/power_supply/battery/input_current_settled", 0644);
-    set_sysfs_value("0", "/sys/class/qcom-battery/restricted_charging", 0644);
-    set_sysfs_value("150", "/sys/class/power_supply/bms/temp_cool", 0644);
-    set_sysfs_value("480", "/sys/class/power_supply/bms/temp_hot", 0644);
-    set_sysfs_value("480", "/sys/class/power_supply/bms/temp_warm", 0644);
+    // Hardcoded values for power supply properties
+    struct power_supply *psy = power_supply_get_by_name("battery");
+    if (psy) {
+        const union power_supply_propval input_current_settled_val = {
+            .intval = 1
+        };
+        const union power_supply_propval input_current_limited_val = {
+            .intval = 0
+        };
+        const union power_supply_propval restricted_charging_val = {
+            .intval = 0
+        };
+        const union power_supply_propval cool_temp_val = {
+            .intval = 150
+        };
+        const union power_supply_propval warm_temp_val = {
+            .intval = 480
+        };
+        const union power_supply_propval hot_temp_val = {
+            .intval = 480
+        };
+        const union power_supply_propval pd_allowed_val = {
+            .intval = 1
+        };
+        const union power_supply_propval allow_hvdcp3_val = {
+            .intval = 1
+        };
+        const union power_supply_propval system_temp_level_val = {
+            .intval = 1
+        };
+
+        smblib_set_prop_input_current_settled(psy, &input_current_settled_val);
+        smblib_set_prop_input_current_limited(psy, &input_current_limited_val);
+        smblib_set_prop_restricted_charging(psy, &restricted_charging_val);
+        smblib_set_prop_cool_temp(psy, &cool_temp_val);
+        smblib_set_prop_warm_temp(psy, &warm_temp_val);
+        smblib_set_prop_hot_temp(psy, &hot_temp_val);
+        smblib_set_prop_pd_allowed(psy, &pd_allowed_val);
+        smblib_set_prop_allow_hvdcp3(psy, &allow_hvdcp3_val);
+        smblib_set_prop_system_temp_level(psy, &system_temp_level_val);
+        power_supply_put(psy);
+    }
 
     pr_info("deopt module loaded\n");
 
@@ -64,4 +99,4 @@ module_exit(deopt_exit);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Meydi Wahendra <meydiwahendra@gmail.com>");
-MODULE_DESCRIPTION("Kernel module to set sysfs values");
+MODULE_DESCRIPTION("Kernel module to set power supply properties");
