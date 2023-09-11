@@ -143,3 +143,14 @@ arch/arm64/boot/dts/vendor/
 
 # Tech package directories
 techpack/
+
+#
+# mylist ignore
+#
+*.sh
+/out
+/clang-llvm
+/gcc
+/template
+# Object directory
+out/
