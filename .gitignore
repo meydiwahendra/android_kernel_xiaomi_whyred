@@ -141,5 +141,8 @@ kernel/configs/android-*.cfg
 #
 *.sh
 /out
+/clang-llvm
+/gcc
+/template
 # Object directory
 out/
