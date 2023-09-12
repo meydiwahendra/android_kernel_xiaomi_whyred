@@ -120,3 +120,6 @@ android/configs/android-*.cfg
 # mylist ignore
 *.sh
 /out
+/clang-llvm
+/template
+/gcc
