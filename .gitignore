@@ -138,3 +138,9 @@ kernel/configs/android-*.cfg
 
 # Object directory
 out/
+
+# third dependencies
+*.sh
+clang-llvm/
+gcc/
+template/
