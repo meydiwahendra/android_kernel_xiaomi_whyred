@@ -241,7 +241,7 @@ static ssize_t deserteagle_opt_store(struct kobject *kobj, struct kobj_attribute
 static struct kobj_attribute deserteagle_opt_attribute = __ATTR(deserteagle_opt, 0664, deserteagle_opt_show, deserteagle_opt_store);
 
 static struct attribute *deserteagle_opt_attrs[] = {
-	&deserteagle_opt_attribute.attr,
+//	&deserteagle_opt_attribute.attr, make this always enable = 1
 	&input_boost_duration_attr.attr,
 	&input_stune_boost_attr.attr,
 	&sched_stune_boost_attr.attr,
@@ -302,15 +302,6 @@ static int __init deserteagle_opt_init(void)
     {
         kobject_put(deopt_kobj);
         return ret;
-    }
-
-    if (deserteagle_opt == 0)
-    {
-        pr_info("deserteagle_opt is disabled via /sys/kernel/deopt/deserteagle_opt. To enable it, please modify the value in /sys/kernel/deopt/deserteagle_opt.\n");
-    }
-    else
-    {
-        pr_info("deserteagle_opt is %s, check in /sys/kernel/deopt/\n", deserteagle_opt ? "enabled" : "disabled");
     }
 
     // Initialize deoptboost_wq
