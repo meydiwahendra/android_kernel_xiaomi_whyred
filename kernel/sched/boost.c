@@ -11,6 +11,7 @@
  */
 
 #include "sched.h"
+#include <linux/deopt.h>
 
 /*
  * Scheduler boost is a mechanism to temporarily place tasks on CPUs
@@ -48,20 +49,15 @@ int sched_boost_handler(struct ctl_table *table, int write,
 	if (ret || !write)
 		goto done;
 
-#ifdef CONFIG_DYNAMIC_STUNE_BOOST
 	if (verify_boost_params(old_val, *data)) {
 		if (*data > 0)
-			if (*data == 1)
-				do_stune_sched_boost(&boost_slot);
-			else
-				do_stune_boost(get_sched_boost() / 2, &boost_slot);
+			do_sched_boost();
 		else
-			reset_stune_boost(boost_slot);
+			do_sched_boost_rem();
 	} else {
 		*data = old_val;
 		ret = -EINVAL;
 	}
-#endif // CONFIG_DYNAMIC_STUNE_BOOST
 
 done:
 	return ret;

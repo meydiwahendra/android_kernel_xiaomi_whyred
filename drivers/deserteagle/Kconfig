@@ -1,5 +1,31 @@
 config DESERTEAGLE_OPT
     bool "Enable DesertEagle Optimization"
+    depends on DYNAMIC_STUNE_BOOST
     help
       Enable this option to include the DesertEagle optimization module.
+
+if DESERTEAGLE_OPT
+
+config INPUT_BOOST_DURATION
+	int "Input boost duration"
+	default "64"
+	help
+	  Default duration to boost on input.
+
+config INPUT_STUNE_BOOST
+	int "Input SchedTune boost level"
+	default "15"
+	help
+	  Default SchedTune boost level for the top-app cgroup.
+	  A value of 0 disables SchedTune boosting for this level.
+
+config SCHED_STUNE_BOOST
+	int "Sched SchedTune boost level"
+	default "12"
+	help
+	  Default SchedTune boost level for the top-app cgroup for
+	  sched_boost calls.
+	  A value of 0 disables SchedTune boosting for this level.
+
+endif
 
