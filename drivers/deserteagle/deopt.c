@@ -62,6 +62,72 @@ module_param(input_boost_duration, ushort, 0644);
 module_param(input_stune_boost, ushort, 0644);
 module_param(sched_stune_boost, ushort, 0644);
 
+static ssize_t input_boost_duration_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+    return sprintf(buf, "%u\n", input_boost_duration);
+}
+
+static ssize_t input_boost_duration_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+    unsigned short value;
+    int ret = sscanf(buf, "%hu", &value);
+    if (ret == 1) {
+        input_boost_duration = value;
+        return count;
+    }
+    return -EINVAL;
+}
+
+static ssize_t input_stune_boost_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+    return sprintf(buf, "%u\n", input_stune_boost);
+}
+
+static ssize_t input_stune_boost_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+    unsigned short value;
+    int ret = sscanf(buf, "%hu", &value);
+    if (ret == 1) {
+        input_stune_boost = value;
+        return count;
+    }
+    return -EINVAL;
+}
+
+static ssize_t sched_stune_boost_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+    return sprintf(buf, "%u\n", sched_stune_boost);
+}
+
+static ssize_t sched_stune_boost_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+    unsigned short value;
+    int ret = sscanf(buf, "%hu", &value);
+    if (ret == 1) {
+        sched_stune_boost = value;
+        return count;
+    }
+    return -EINVAL;
+}
+
+static struct kobj_attribute input_boost_duration_attr = {
+    .attr = { .name = "input_boost_duration", .mode = 0644 },
+    .show = input_boost_duration_show,
+    .store = input_boost_duration_store,
+};
+
+static struct kobj_attribute input_stune_boost_attr = {
+    .attr = { .name = "input_stune_boost", .mode = 0644 },
+    .show = input_stune_boost_show,
+    .store = input_stune_boost_store,
+};
+
+static struct kobj_attribute sched_stune_boost_attr = {
+    .attr = { .name = "sched_stune_boost", .mode = 0644 },
+    .show = sched_stune_boost_show,
+    .store = sched_stune_boost_store,
+};
+
 static bool input_stune_boost_active;
 static bool sched_stune_boost_active;
 
@@ -176,6 +242,9 @@ static struct kobj_attribute deserteagle_opt_attribute = __ATTR(deserteagle_opt,
 
 static struct attribute *deserteagle_opt_attrs[] = {
 	&deserteagle_opt_attribute.attr,
+	&input_boost_duration_attr.attr,
+	&input_stune_boost_attr.attr,
+	&sched_stune_boost_attr.attr,
 	NULL,
 };
 
